@@ -121,9 +121,6 @@ module Fluent
       @remove_keys.each {|k| new_record.delete(k) } if @remove_keys
 
       # Inject query param values into the record
-      if !@query_key
-        log.warn "unable to find query_prefix setting"
-      end
       if @query_key && opts.fetch("query", nil)
         opts['query'].each { |key, value| new_record["#{@query_prefix}:#{key}"] = value }
       end
