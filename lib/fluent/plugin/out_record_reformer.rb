@@ -15,8 +15,9 @@ module Fluent
     config_param :keep_keys, :string, :default => nil
     config_param :renew_record, :bool, :default => false
     config_param :enable_ruby, :bool, :default => true # true for lower version compatibility
+    config_param :parse_query, :string, :default => nil
 
-    BUILTIN_CONFIGURATIONS = %W(type tag output_tag remove_keys renew_record keep_keys enable_ruby)
+    BUILTIN_CONFIGURATIONS = %W(type tag output_tag remove_keys renew_record keep_keys enable_ruby parse_query)
 
     # To support log_level option implemented by Fluentd v0.10.43
     unless method_defined?(:log)
@@ -63,12 +64,14 @@ module Fluent
           require 'pathname'
           require 'uri'
           require 'cgi'
+          require 'json'
           RubyPlaceholderExpander.new(log)
         else
           PlaceholderExpander.new(log)
         end
 
       @hostname = Socket.gethostname
+      @parse_query = conf['parse_query']
     end
 
     def emit(tag, es, chain)
@@ -86,6 +89,7 @@ module Fluent
       last_record = nil
       es.each {|time, record|
         last_record = record # for debug log
+        placeholders['query'] = extract_query(record.fetch(@parse_query, ''))
         new_tag, new_record = reform(@tag, time, record, placeholders)
         Engine.emit(new_tag, time, new_record) if new_tag
       }
@@ -158,6 +162,29 @@ module Fluent
       rev_tag_suffix.reverse!
     end
 
+    # Attempt to pass request params as a JSON string
+    #
+    # @param [String]   url    URL to be parsed
+    def extract_query(url)
+      r = CGI.parse(URI.parse(url).query || '')
+      map = {}
+      r.each { |key, value| map[key] = value.pop }
+      return map.to_json
+      # if r.start_with?('{', '[') && !(r == '{}') 
+      #   map = {}
+      #   begin
+      #     r = JSON.parse(r)
+      #     r.each { |key, value| @map[key] = value.pop }
+      #     r = map
+      #   rescue JSON::ParserError => e
+      #     r = {}        
+      #   ensure
+      #     r = r.to_json
+      #   end
+      # end
+      # return r
+    end
+
     class PlaceholderExpander
       attr_reader :placeholders, :log
 
@@ -216,7 +243,7 @@ module Fluent
       # @param [String] str         the string to be replaced
       def expand(str)
         interpolated = str.gsub(/\$\{([^}]+)\}/, '#{\1}') # ${..} => #{..}
-        eval "\"#{interpolated}\"", @placeholders.instance_eval { binding }
+        eval "%Q[#{interpolated}]", @placeholders.instance_eval { binding }
       rescue => e
         log.warn "record_reformer: failed to expand `#{str}`", :error_class => e.class, :error => e.message
         log.warn_backtrace
