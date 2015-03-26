@@ -101,6 +101,11 @@ This results in same, but please note that following option parameters are reser
     Enable to use ruby codes in placeholders. See `Placeholders` section.
     Default is `true` (just for lower version compatibility). 
 
+- parse_query *string*
+
+    Specifies record that we can attempt to parse a query string params from.
+    If given, attempts to extract query params into a JSON string under the place holder `${query}`
+
 ## Placeholders
 
 The keys of input json are available as placeholders. In the above example, 
@@ -112,6 +117,7 @@ The keys of input json are available as placeholders. In the above example,
 shall be available. In addition, following placeholders are reserved: 
 
 * ${hostname} Hostname of the running machine
+* ${query} Parsed query string params as a JSON string
 * ${tag} Input tag
 * ${time} Time of the event
 * ${tags[N]} (Obsolete. Use tag\_parts) Input tag splitted by '.'
@@ -145,6 +151,7 @@ but, please note that enabling ruby codes is not encouraged by security reasons 
 
 Following plugins look similar:
 
+* [fluent-plugin-record-reformer](https://github.com/sonots/fluent-plugin-record-reformer) The upstream project
 * [fluent-plugin-record-modifier](https://github.com/repeatedly/fluent-plugin-record-modifier)
 * [fluent-plugin-format](https://github.com/mach/fluent-plugin-format)
 * [fluent-plugin-add](https://github.com/yu-yamada/fluent-plugin-add)
