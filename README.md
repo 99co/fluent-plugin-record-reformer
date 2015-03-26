@@ -101,10 +101,23 @@ This results in same, but please note that following option parameters are reser
     Enable to use ruby codes in placeholders. See `Placeholders` section.
     Default is `true` (just for lower version compatibility). 
 
-- parse_query *string*
+- query_key *string*
 
     Specifies record that we can attempt to parse a query string params from.
-    If given, attempts to extract query params into a JSON string under the place holder `${query}`
+    If given, unpacks query params found in the `query_key` key and adds them to the top-level record,
+    prefixed with `query_prefix` (See `query_prefix` below)
+
+- query_prefix *string*
+   
+    Specifies a prefix for record keys derived from query params found in the `query_key` key. (Defaults to 'q')
+    eg. if `query_prefix` is 'q', and `query_key` is '`request`' then given,
+    
+    `"request" => "/path/query?this=is&another=query"`
+  
+    the resulting keys on the top-level record will be
+
+    `"q:this" => "is"`
+    `"q:another" => "query"`
 
 ## Placeholders
 
@@ -117,7 +130,6 @@ The keys of input json are available as placeholders. In the above example,
 shall be available. In addition, following placeholders are reserved: 
 
 * ${hostname} Hostname of the running machine
-* ${query} Parsed query string params as a JSON string
 * ${tag} Input tag
 * ${time} Time of the event
 * ${tags[N]} (Obsolete. Use tag\_parts) Input tag splitted by '.'
