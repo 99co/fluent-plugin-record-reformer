@@ -15,9 +15,10 @@ module Fluent
     config_param :keep_keys, :string, :default => nil
     config_param :renew_record, :bool, :default => false
     config_param :enable_ruby, :bool, :default => true # true for lower version compatibility
-    config_param :parse_query, :string, :default => nil
+    config_param :query_key, :string, :default => nil
+    config_param :query_prefix, :string, :default => "q"
 
-    BUILTIN_CONFIGURATIONS = %W(type tag output_tag remove_keys renew_record keep_keys enable_ruby parse_query)
+    BUILTIN_CONFIGURATIONS = %W(type tag output_tag remove_keys renew_record keep_keys enable_ruby query_key query_prefix)
 
     # To support log_level option implemented by Fluentd v0.10.43
     unless method_defined?(:log)
@@ -64,14 +65,12 @@ module Fluent
           require 'pathname'
           require 'uri'
           require 'cgi'
-          require 'json'
           RubyPlaceholderExpander.new(log)
         else
           PlaceholderExpander.new(log)
         end
 
       @hostname = Socket.gethostname
-      @parse_query = conf['parse_query']
     end
 
     def emit(tag, es, chain)
@@ -89,7 +88,7 @@ module Fluent
       last_record = nil
       es.each {|time, record|
         last_record = record # for debug log
-        placeholders['query'] = extract_query(record.fetch(@parse_query, ''))
+        placeholders['query'] = extract_query(record.fetch(@query_key, ''))
         new_tag, new_record = reform(@tag, time, record, placeholders)
         Engine.emit(new_tag, time, new_record) if new_tag
       }
@@ -120,6 +119,14 @@ module Fluent
       @keep_keys.each {|k| new_record[k] = record[k]} if @keep_keys and @renew_record
       new_record.merge!(expand_placeholders(@map))
       @remove_keys.each {|k| new_record.delete(k) } if @remove_keys
+
+      # Inject query param values into the record
+      if !@query_key
+        log.warn "unable to find query_prefix setting"
+      end
+      if @query_key && opts.fetch("query", nil)
+        opts['query'].each { |key, value| new_record["#{@query_prefix}:#{key}"] = value }
+      end
 
       [new_tag, new_record]
     end
@@ -169,7 +176,7 @@ module Fluent
       r = CGI.parse(URI.parse(url).query || '')
       map = {}
       r.each { |key, value| map[key] = value.pop }
-      return map.to_json
+      return map
       # if r.start_with?('{', '[') && !(r == '{}') 
       #   map = {}
       #   begin
