@@ -3,10 +3,10 @@ $:.push File.expand_path('../lib', __FILE__)
 
 Gem::Specification.new do |gem|
   gem.name        = "fluent-plugin-record-reformer"
-  gem.version     = "0.5.0"
-  gem.authors     = ["Naotoshi Seo"]
-  gem.email       = "sonots@gmail.com"
-  gem.homepage    = "https://github.com/sonots/fluent-plugin-record-reformer"
+  gem.version     = "0.5.1"
+  gem.authors     = ["Ruiwen Chua"]
+  gem.email       = "ruiwen@99.co"
+  gem.homepage    = "https://github.com/99co/fluent-plugin-record-reformer"
   gem.description = "Fluentd plugin to add or replace fields of a event record"
   gem.summary     = gem.description
   gem.licenses    = ["MIT"]
